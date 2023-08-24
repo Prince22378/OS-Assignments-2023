@@ -102,6 +102,7 @@ void load_and_run_elf(char** exe) {
                 perror("Error deallocating virtual_mem using munmap");
                 exit(1);
             }
+            break; 
         }            
     }
   }
