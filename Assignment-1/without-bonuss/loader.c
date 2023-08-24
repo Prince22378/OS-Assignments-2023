@@ -53,6 +53,11 @@ int* allocateVerMemory(int size) {
  */
 void load_and_run_elf(char** exe) {
   fd = open(exe[1], O_RDONLY);
+  if (fd == -1) {
+    perror("'Error' file is not opening\n");
+    exit(1);
+  }
+  Elf32_Ehdr* ehdr = allocateElfHeader();
   // 1. Load entire binary content into the memory from the ELF file.
   // 2. Iterate through the PHDR table and find the section of PT_LOAD 
   //    type that contains the address of the entrypoint method in fib.c
