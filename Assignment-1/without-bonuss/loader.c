@@ -12,6 +12,10 @@ void loader_cleanup() {
 }
 Elf32_Ehdr* allocateElfHeader() {
     Elf32_Ehdr* ehdr = (Elf32_Ehdr*)malloc(sizeof(Elf32_Ehdr));
+    if (!ehdr) {
+        perror("Ehdr memory allocation failed! ");
+        return NULL;
+    }
     return ehdr;
 }
 Elf32_Phdr* allocateProgramHeaders(Elf32_Ehdr* ehdr) {
@@ -29,6 +33,11 @@ Elf32_Phdr* allocateProgramHeaders(Elf32_Ehdr* ehdr) {
 }
 int* allocateVerMemory(int size) {
     int* vmem = mmap(NULL, size, PROT_READ | PROT_WRITE | PROT_EXEC, MAP_ANONYMOUS| MAP_PRIVATE, 0, 0);
+    if (v_mem == MAP_FAILED) {
+      perror("Error allocating v_mem using mmap");
+      munmap(v_mem,size);
+      exit(1);
+    }
     return vmem;
 }
 /*
