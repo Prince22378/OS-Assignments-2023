@@ -10,7 +10,14 @@ int fd;
 void loader_cleanup() {
   
 }
-
+Elf32_Ehdr* allocateElfHeader() {
+    Elf32_Ehdr* ehdr = (Elf32_Ehdr*)malloc(sizeof(Elf32_Ehdr));
+    return ehdr;
+}
+int* allocateVerMemory(int size) {
+    int* vmem = mmap(NULL, size, PROT_READ | PROT_WRITE | PROT_EXEC, MAP_ANONYMOUS| MAP_PRIVATE, 0, 0);
+    return vmem;
+}
 /*
  * Load and run the ELF executable file
  */
