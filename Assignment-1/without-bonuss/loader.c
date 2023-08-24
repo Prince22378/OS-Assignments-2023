@@ -14,6 +14,19 @@ Elf32_Ehdr* allocateElfHeader() {
     Elf32_Ehdr* ehdr = (Elf32_Ehdr*)malloc(sizeof(Elf32_Ehdr));
     return ehdr;
 }
+Elf32_Phdr* allocateProgramHeaders(Elf32_Ehdr* ehdr) {
+    if (!ehdr) {
+        return NULL;  
+    }
+    int total_ph_size = ehdr->e_phentsize * ehdr->e_phnum;
+    Elf32_Phdr* phdr = (Elf32_Phdr*)malloc(total_ph_size);
+    if (!phdr) {
+        perror("Phdr memory allocation failed! ");
+        free(phdr);
+        return NULL;  
+    }
+    return phdr;
+}
 int* allocateVerMemory(int size) {
     int* vmem = mmap(NULL, size, PROT_READ | PROT_WRITE | PROT_EXEC, MAP_ANONYMOUS| MAP_PRIVATE, 0, 0);
     return vmem;
