@@ -98,6 +98,10 @@ void load_and_run_elf(char** exe) {
             int (* _start)() = (int(*)())entry_address;
             int result = _start();
             printf("User _start return value = %d\n",result); 
+            if(munmap(virtual_mem, phdr[i].p_vaddr) == -1){
+                perror("Error deallocating virtual_mem using munmap");
+                exit(1);
+            }
         }            
     }
   }
