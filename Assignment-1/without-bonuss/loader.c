@@ -73,7 +73,7 @@ void load_and_run_elf(char** exe) {
     perror("'Error' file is not opening\n");
     exit(1);
   }
-  Elf32_Ehdr* ehdr = allocateElfHeader();
+
   // 1. Load entire binary content into the memory from the ELF file.
   // 2. Iterate through the PHDR table and find the section of PT_LOAD 
   //    type that contains the address of the entrypoint method in fib.c
@@ -82,8 +82,25 @@ void load_and_run_elf(char** exe) {
   // 4. Navigate to the entrypoint address into the segment loaded in the memory in above step
   // 5. Typecast the address to that of function pointer matching "_start" method in fib.c.
   // 6. Call the "_start" method and print the value returned from the "_start"
-  int result = _start();
-  printf("User _start return value = %d\n",result);
+  Elf32_Ehdr* ehdr = allocateElfHeader();
+  readFile(fd,ehdr,sizeof(Elf32_Ehdr));
+  Elf32_Phdr* phdr = allocateProgramHeaders(ehdr);
+  movFilePointer(fd,ehdr->e_phoff, SEEK_SET);
+  readFile(fd,phdr,ehdr->e_phentsize * ehdr->e_phnum);
+  for (int i = 0; i < ehdr->e_phnum; ++i) {
+    if (phdr[i].p_type == PT_LOAD) {
+        if (ehdr->e_entry > phdr[i].p_vaddr && ehdr->e_entry < phdr[i].p_vaddr + phdr[i].p_memsz) {
+            int * virtual_mem = allocateVerMemory(phdr[i].p_vaddr);
+            movFilePointer(fd, phdr[i].p_offset, SEEK_SET);
+            readFile(fd,virtual_mem,phdr[i].p_vaddr);
+            int entry_offset = ehdr->e_entry - phdr[i].p_paddr;
+            int* entry_address = (int*)((int)virtual_mem + entry_offset);
+            int (* _start)() = (int(*)())entry_address;
+            int result = _start();
+            printf("User _start return value = %d\n",result); 
+        }            
+    }
+  }
 }
 
 int main(int argc, char** argv) 
