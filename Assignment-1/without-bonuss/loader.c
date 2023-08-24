@@ -18,6 +18,7 @@ void loader_cleanup() {
     free(phdr);
   }
 }
+
 Elf32_Ehdr* allocateElfHeader() {
     Elf32_Ehdr* ehdr = (Elf32_Ehdr*)malloc(sizeof(Elf32_Ehdr));
     if (!ehdr) {
@@ -26,6 +27,7 @@ Elf32_Ehdr* allocateElfHeader() {
     }
     return ehdr;
 }
+
 Elf32_Phdr* allocateProgramHeaders(Elf32_Ehdr* ehdr) {
     if (!ehdr) {
         return NULL;  
@@ -39,6 +41,7 @@ Elf32_Phdr* allocateProgramHeaders(Elf32_Ehdr* ehdr) {
     }
     return phdr;
 }
+
 int* allocateVerMemory(int size) {
     int* vmem = mmap(NULL, size, PROT_READ | PROT_WRITE | PROT_EXEC, MAP_ANONYMOUS| MAP_PRIVATE, 0, 0);
     if (vmem == MAP_FAILED) {
@@ -48,6 +51,7 @@ int* allocateVerMemory(int size) {
     }
     return vmem;
 }
+
 int readFile(int fd, void * buffer, int size){
     int rd = read(fd,buffer,size);
     if(rd==-1){
@@ -56,6 +60,7 @@ int readFile(int fd, void * buffer, int size){
     }
     return rd;
 }
+
 void movFilePointer(int fd, int offset, int start) {
     int res = lseek(fd, offset, start);
     if (res == -1) {
@@ -73,7 +78,6 @@ void load_and_run_elf(char** exe) {
     perror("'Error' file is not opening!\n");
     exit(1);
   }
-
   // 1. Load entire binary content into the memory from the ELF file.
   // 2. Iterate through the PHDR table and find the section of PT_LOAD 
   //    type that contains the address of the entrypoint method in fib.c
