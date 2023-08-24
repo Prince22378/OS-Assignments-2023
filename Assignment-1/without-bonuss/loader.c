@@ -8,7 +8,15 @@ int fd;
  * release memory and other cleanups
  */
 void loader_cleanup() {
-  
+  if(fd != -1){
+    close(fd);
+  }
+  if(ehdr != NULL){
+    free(ehdr);
+  }
+  if(phdr != NULL){
+    free(phdr);
+  }
 }
 Elf32_Ehdr* allocateElfHeader() {
     Elf32_Ehdr* ehdr = (Elf32_Ehdr*)malloc(sizeof(Elf32_Ehdr));
