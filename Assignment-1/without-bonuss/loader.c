@@ -48,6 +48,22 @@ int* allocateVerMemory(int size) {
     }
     return vmem;
 }
+int readFile(int fd, void * buffer, int size){
+    int rd = read(fd,buffer,size);
+    if(rd==-1){
+        perror("Error reading file \n");
+        return -1;
+    }
+    return rd;
+}
+void movFilePointer(int fd, int offset, int start) {
+    int res = lseek(fd, offset, start);
+    if (res == -1) {
+        perror("Error moving pointer (lseek) \n");
+        exit(1);
+    }
+}
+
 /*
  * Load and run the ELF executable file
  */
