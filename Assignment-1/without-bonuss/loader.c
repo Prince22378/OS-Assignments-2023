@@ -41,9 +41,9 @@ Elf32_Phdr* allocateProgramHeaders(Elf32_Ehdr* ehdr) {
 }
 int* allocateVerMemory(int size) {
     int* vmem = mmap(NULL, size, PROT_READ | PROT_WRITE | PROT_EXEC, MAP_ANONYMOUS| MAP_PRIVATE, 0, 0);
-    if (v_mem == MAP_FAILED) {
+    if (vmem == MAP_FAILED) {
       perror("Error allocating v_mem using mmap");
-      munmap(v_mem,size);
+      munmap(vmem,size);
       exit(1);
     }
     return vmem;
