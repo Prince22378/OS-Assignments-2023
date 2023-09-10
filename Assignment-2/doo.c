@@ -319,3 +319,48 @@ char* read_user_input() {
     }
     return input;
 }
+void shell_loop() {
+    int status;
+    char* last_command = NULL; //stores the last entered command
+    do {
+        printf("$ ");
+        char* command = read_user_input();
+        if (command != NULL) {
+            //check if the entered command is not the same as the previous one
+            if (last_command == NULL || strcmp(command, last_command) != 0) {
+                add_to_history(command, -1, (struct timeval){0}, (struct timeval){0});  //cmd,pid,start time, endtime
+                free(last_command); //free the previous command
+                last_command = strdup(command); // Update the last_command
+            }
+            if (strcmp(command, "exit") == 0) {
+                // Display command history with execution details before exiting
+                for (int i = 0; i < history_count; i++) {
+                    printf("Command: %s\n", history[i].command);
+                    printf("Process ID: %d\n", history[i].pid);
+                    printf("Start Time: %ld.%06ld seconds\n", history[i].start_time.tv_sec, history[i].start_time.tv_usec);
+                    printf("End Time: %ld.%06ld seconds\n", history[i].end_time.tv_sec, history[i].end_time.tv_usec);
+                    printf("Duration: %ld.%06ld seconds\n",
+                        history[i].end_time.tv_sec - history[i].start_time.tv_sec,
+                        history[i].end_time.tv_usec - history[i].start_time.tv_usec);
+                    printf("\n");
+                }
+                free(command);
+                free(last_command);
+                break;
+            } else if (strcmp(command, "history") == 0) {
+                display_history();
+            } else if (strncmp(command, "prince", 6) == 0) {
+                char* filename = command + 7;
+                status = launch_script(filename);
+                if (status != 0) {
+                    fprintf(stderr, "Failed to execute script: %s\n", filename);
+                }
+            } else {
+                status = launch(command);
+                if (status != 0) {
+                    fprintf(stderr, "Command execution failed: %s\n", command);
+                }
+            }
+        }free(command); 
+    } while (1);
+}
