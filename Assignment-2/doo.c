@@ -41,6 +41,10 @@ void display_history() {
     }
     free(last_command);
 }
+// Function to get the current time
+void get_current_time(struct timeval* tv) {
+    gettimeofday(tv, NULL);
+}
 int create_process_and_run(char* command) {
     struct timeval start_time, end_time;
     int status;
