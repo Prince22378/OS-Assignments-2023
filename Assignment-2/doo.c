@@ -364,3 +364,7 @@ void shell_loop() {
         }free(command); 
     } while (1);
 }
+int main() {
+    shell_loop();
+    return 0;
+}
