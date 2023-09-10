@@ -278,3 +278,20 @@ int launch(char* command) {
     status = create_process_and_run(command);
     return status;
 }
+int launch_script(char* bashFile) {
+    FILE* bash_file= fopen(bashFile, "r");
+    if (bash_file == NULL) {
+        perror("Failed to open script file");
+        return 1;
+    }
+    char line[MAX_INPUT_LENGTH];
+    while (fgets(line, sizeof(line), bash_file) != NULL) {
+        // Remove trailing newline character
+        char* newline = strchr(line, '\n');
+        if (newline != NULL) {
+            *newline = '\0';
+        }
+        // Process each line of the script file here
+        int status = launch(line);
+        
+}
