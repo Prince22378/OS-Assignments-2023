@@ -301,3 +301,17 @@ int launch_script(char* bashFile) {
     return 0;
         
 }
+char* read_user_input() {
+    char* input = malloc(MAX_INPUT_LENGTH); //allocating memory for input
+    if (input == NULL) {
+        perror("Memory allocation error");
+        exit(EXIT_FAILURE);
+    }
+    // Read user input
+    if (fgets(input, MAX_INPUT_LENGTH, stdin) == NULL) {
+        free(input);
+        return NULL; //end of input or error
+    }
+    
+    return input;
+}
