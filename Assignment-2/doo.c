@@ -1,3 +1,8 @@
+#include "header.c"
+#define MAX_HISTORY_SIZE 50
+#define MAX_INPUT_LENGTH 1024
+
+//struct to store command history with execution details
 struct CommandHistory {
     char* command;
     pid_t pid;
