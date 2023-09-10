@@ -41,3 +41,9 @@ void display_history() {
     }
     free(last_command);
 }
+
+int launch(char* command) {
+    int status;
+    status = create_process_and_run(command);
+    return status;
+}
