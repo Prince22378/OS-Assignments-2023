@@ -312,6 +312,10 @@ char* read_user_input() {
         free(input);
         return NULL; //end of input or error
     }
-    
+    // Removing the trailing newline character if present
+    size_t len = strlen(input);
+    if (len > 0 && input[len - 1] == '\n') {
+        input[len - 1] = '\0';
+    }
     return input;
 }
