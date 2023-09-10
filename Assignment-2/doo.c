@@ -293,5 +293,11 @@ int launch_script(char* bashFile) {
         }
         // Process each line of the script file here
         int status = launch(line);
+        if (status != 0) {
+            fprintf(stderr, "Command execution failed: %s\n", line);
+        }
+    }
+    fclose(bash_file);
+    return 0;
         
 }
