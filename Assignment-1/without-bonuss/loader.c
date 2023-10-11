@@ -32,7 +32,7 @@ Elf32_Phdr* allocateProgramHeaders(Elf32_Ehdr* ehdr) {
     if (!ehdr) {
         return NULL;  
     }
-    int total_ph_size = ehdr->e_phentsize * ehdr->e_phnum;
+    int total_ph_size = ehdr->e_phentsize * ehdr->e_phnum;  // program header table size is not fixed unlike ehdr.
     Elf32_Phdr* phdr = (Elf32_Phdr*)malloc(total_ph_size);
     if (!phdr) {
         perror("Phdr memory allocation failed! \n");
@@ -94,11 +94,11 @@ void load_and_run_elf(char** exe) {
   for (int i = 0; i < ehdr->e_phnum; ++i) {
     if (phdr[i].p_type == PT_LOAD) {
         if (ehdr->e_entry > phdr[i].p_vaddr && ehdr->e_entry < phdr[i].p_vaddr + phdr[i].p_memsz) {
-            int * virtual_mem = allocateVerMemory(phdr[i].p_vaddr);
-            movFilePointer(fd, phdr[i].p_offset, SEEK_SET);
-            readFile(fd,virtual_mem,phdr[i].p_vaddr);
-            int entry_offset = ehdr->e_entry - phdr[i].p_paddr;
-            int* entry_address = (int*)((int)virtual_mem + entry_offset);
+            int * virtual_mem = allocateVerMemory(phdr[i].p_vaddr);   // loading into memory
+            movFilePointer(fd, phdr[i].p_offset, SEEK_SET);           // even if i already know e_entry, its not just possible to move the pointer there and execute.
+            readFile(fd,virtual_mem,phdr[i].p_vaddr);                //  we first need to load the segment into the memory
+            int entry_offset = ehdr->e_entry - phdr[i].p_paddr;      // we know from elf the offset between e_entry and p_vaddr. From the vir_mem (where the segment is loaded), we move that much offset into vir_mem to get there
+            int* entry_address = (int*)((int)virtual_mem + entry_offset); 
             int (* _start)() = (int(*)())entry_address;
             int result = _start();
             printf("User _start return value = %d\n",result); 
