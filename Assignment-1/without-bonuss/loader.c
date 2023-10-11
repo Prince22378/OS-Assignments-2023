@@ -94,11 +94,17 @@ void load_and_run_elf(char** exe) {
   for (int i = 0; i < ehdr->e_phnum; ++i) {
     if (phdr[i].p_type == PT_LOAD) {
         if (ehdr->e_entry > phdr[i].p_vaddr && ehdr->e_entry < phdr[i].p_vaddr + phdr[i].p_memsz) {
-            int * virtual_mem = allocateVerMemory(phdr[i].p_vaddr);   // loading into memory
-            movFilePointer(fd, phdr[i].p_offset, SEEK_SET);           // even if i already know e_entry, its not just possible to move the pointer there and execute.
-            readFile(fd,virtual_mem,phdr[i].p_vaddr);                //  we first need to load the segment into the memory
-            int entry_offset = ehdr->e_entry - phdr[i].p_paddr;      // we know from elf the offset between e_entry and p_vaddr. From the vir_mem (where the segment is loaded), we move that much offset into vir_mem to get there
-            int* entry_address = (int*)((int)virtual_mem + entry_offset); 
+                   
+          // even if i already know e_entry, its not just possible to move the pointer there and execute. (just knowing the address doesnot help.
+          // p_vaddr is the address from which segment starts, e_entry is the address of start, p_offset is the offset from 0X00 to that segment. 
+          // we know from elf, the offset between e_entry and p_vaddr (i.e how much into the segment is the e_entry point from the diff of their addresses)
+          //so we know how much we need to move into the segment wherever the segment is now loaded. So just adding the offset to virtual_mem where we loaded the segment.
+          
+          int * virtual_mem = allocateVerMemory(phdr[i].p_vaddr);   // loading the segment into memory.
+          movFilePointer(fd, phdr[i].p_offset, SEEK_SET);  
+          readFile(fd,virtual_mem,phdr[i].p_vaddr);     
+          int entry_offset = ehdr->e_entry - phdr[i].p_paddr;    
+            int* entry_address = (int*)((int)virtual_mem + entry_offset); // p_vaddr / p_paddr is a little confusing. chatgpt says it depends on what the e_entry address is virtual or physical address  
             int (* _start)() = (int(*)())entry_address;
             int result = _start();
             printf("User _start return value = %d\n",result); 
