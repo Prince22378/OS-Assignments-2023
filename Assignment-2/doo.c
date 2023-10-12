@@ -9,6 +9,7 @@ struct CommandHistory {
     struct timeval start_time;
     struct timeval end_time;
 };
+
 //array to store command history
 struct CommandHistory history[MAX_HISTORY_SIZE]; 
 int history_count = 0; //number of commands in history
@@ -17,7 +18,7 @@ int history_count = 0; //number of commands in history
 void add_to_history(char* command, pid_t pid, struct timeval start_time, struct timeval end_time) {
     if (pid != -1) {  //entries with a valid process ID
         if (history_count < MAX_HISTORY_SIZE) {
-            history[history_count].command = strdup(command);
+            history[history_count].command = strdup(command); // strdup is for making copy of the command, not just pointing to the same copy as it would later be altered.
             history[history_count].pid = pid;
             history[history_count].start_time = start_time;
             history[history_count].end_time = end_time;
@@ -25,9 +26,9 @@ void add_to_history(char* command, pid_t pid, struct timeval start_time, struct 
         } else {
             free(history[0].command); //removing oldest command from history
             for (int i = 0; i < history_count - 1; i++) {
-                history[i] = history[i + 1];
+                history[i] = history[i + 1];  // shifting all others a step ahead to create vacancy at the end
             }
-            history[history_count - 1].command = strdup(command);
+            history[history_count - 1].command = strdup(command); // 49th history shifted to 48th index, this 50th new entry into 49th index
             history[history_count - 1].pid = pid;
             history[history_count - 1].start_time = start_time;
             history[history_count - 1].end_time = end_time;
@@ -41,11 +42,12 @@ void display_history() {
         if (last_command == NULL || strcmp(history[i].command, last_command) != 0) {
             printf("%d. %s\n", i + 1, history[i].command);
             free(last_command);
-            last_command = strdup(history[i].command);
+            last_command = strdup(history[i].command);   
         }
     }
-    free(last_command);
+    free(last_command);  // checking if the same command is repeated, it doesnot then keep in history
 }
+
 // Function to get the current time
 void get_current_time(struct timeval* tv) {
     gettimeofday(tv, NULL);
