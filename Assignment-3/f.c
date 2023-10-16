@@ -498,7 +498,10 @@ void shell_loop(struct Queue* ready_queue, int NCPU, int TSLICE) {
             } else if (strncmp(command, "show", 4) == 0) {
                 show(ready_queue);
             } else if (strncmp(command, "execute", 7) == 0) {
-                executescheduler(ready_queue, NCPU, TSLICE);
+                while(!isEmpty(ready_queue)){
+                    executescheduler(ready_queue, NCPU, TSLICE);
+                    }
+                    
             } else {
                 status = launch(command);
                 if (status != 0) {
