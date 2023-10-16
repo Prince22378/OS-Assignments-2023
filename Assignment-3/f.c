@@ -285,3 +285,257 @@ int create_process_and_run(char* command) {
     wait(NULL);
     return 0;
 }
+char* read_user_input() {
+    char* input = malloc(MAX_INPUT_LENGTH);
+    if (input == NULL) {
+        perror("Memory allocation failed");
+        exit(EXIT_FAILURE);
+    }
+    if (fgets(input, MAX_INPUT_LENGTH, stdin) == NULL) {
+        free(input);
+        return NULL;
+    }
+    size_t len = strlen(input);
+    if (len > 0 && input[len - 1] == '\n') {
+        input[len - 1] = '\0';
+    }
+    return input;
+}
+struct Queue* createQueue(){
+    struct Queue* queue = (struct Queue*)malloc(sizeof(struct Queue));
+    if(queue == NULL){
+        perror("memory allocation fialed");
+        exit(EXIT_FAILURE);
+    }
+    queue->front = queue->rear = NULL;
+    if(sem_init(&queue->mutex, 0, 1)!= 0){
+        perror("Semaphore failed");
+        free(queue); 
+        exit(EXIT_FAILURE);
+    }
+    return queue;
+}
+int isEmpty(struct Queue* queue) {
+    return queue->front == NULL;
+}
+void enqueue(struct Queue* queue, char* command, int PID, int exec_time, int wait_time){
+    if(sem_wait(&queue->mutex)!= 0){
+        perror("semaphore lock failed\n");
+        exit(EXIT_FAILURE);
+    }
+    struct QueueItem* details = (struct QueueItem*)malloc(sizeof(struct QueueItem));
+    if (details == NULL) {
+        perror("memory allocation failed\n");
+        exit(EXIT_FAILURE);
+    }
+    details->data[0] = PID;
+    details->data[1] = exec_time;
+    details->data[2] = wait_time;
+    strncpy(details->command, command, MAX_INPUT_LENGTH);
+    details->next = NULL;
+    if(isEmpty(queue)){
+        queue->front = queue->rear = details;
+    }else{
+        queue->rear->next = details;
+        queue->rear = details;
+    }
+    if(sem_post(&queue->mutex)!= 0){
+        perror("semaphore unlock failed\n");
+        exit(EXIT_FAILURE);
+    }
+}
+
+struct QueueItem* dequeue(struct Queue* queue) {
+    if (sem_wait(&queue->mutex) != 0) {
+        perror("semaphore locked failed\n");
+        exit(EXIT_FAILURE);
+    }
+    if (isEmpty(queue)) {
+        if (sem_post(&queue->mutex) != 0) {
+            perror("semaphore unlocked failed\n");
+            exit(EXIT_FAILURE);
+        }
+        return NULL;
+    }
+    struct QueueItem* temp = queue->front;
+    queue->front = queue->front->next;
+    if (queue->front == NULL) {
+        queue->rear = NULL;
+    }
+    if (sem_post(&queue->mutex) != 0) {
+        perror("Failed to unlock the semaphore");
+        exit(EXIT_FAILURE);
+    }
+    return temp;
+}
+
+void show(struct Queue* ready_queue) {
+    struct QueueItem* current = ready_queue->front;
+    if (current == NULL) {
+        printf("Queue is empty.\n");
+        return;
+    }
+    printf("Queue contents:\n");
+    while (current != NULL) {
+        printf("Command: %s\n", current->command);
+        printf("PID: %d\n", current->data[0]);
+        printf("Execution Time: %d\n", current->data[1]);
+        printf("Waiting Time: %d\n", current->data[2]);
+        printf("\n");
+        current = current->next;
+    }
+}
+// Function to launch a command
+int launch(char* command) {
+    int status;
+    status = create_process_and_run(command);
+    return status;
+}
+void executescheduler(struct Queue* ready_queue, int NCPU, int TSILCE) {
+    struct QueueItem* arr[NCPU];
+    int count = 0;
+    struct QueueItem* current = ready_queue->front;
+    while (current != NULL) {
+        current->data[2]+=TSILCE;
+        current = current->next;
+    }
+
+    for (int i = 0; i < NCPU; i++) {
+        if (!isEmpty(ready_queue)) {
+            struct QueueItem* p = dequeue(ready_queue);
+            if (p != NULL) {
+                p->data[2]-=TSILCE;
+                kill(p->data[0], SIGCONT);
+                arr[i] = p;
+                count = count + 1;
+            }
+        }
+    }
+    sleep(TSILCE);
+    for (int i = 0; i < count; i++) {
+        if (arr[i] != NULL) {
+            int status;
+            int result = waitpid(arr[i]->data[0], &status, WNOHANG);
+            if (result == 0) {
+                arr[i]->data[1] += TSILCE;
+                kill(arr[i]->data[0], SIGSTOP);
+                enqueue(ready_queue, arr[i]->command, arr[i]->data[0], arr[i]->data[1], arr[i]->data[2]);
+            } else {
+                arr[i]->data[1] += TSILCE;
+                printf("Process with PID %d completed execution.\n", arr[i]->data[0]);
+                printf("Execution Time %d completed execution.\n", arr[i]->data[1]);
+                // printf("Process with Waiting Time %d completed execution.\n", array[i]->data[2]);
+                // printf("Process with Completion time %d completion time.\n", (array[i]->data[1]+array[i]->data[2]));
+                char *concatenated_command = (char *)malloc(strlen("submit ") + strlen(arr[i]->command) + 1);
+                if (concatenated_command == NULL) {
+                    perror("Memory allocation error");
+                    exit(EXIT_FAILURE);
+                }
+                strcpy(concatenated_command, "submit ");
+                strcat(concatenated_command, arr[i]->command);
+                if (arr[i] != NULL) {
+                    add_to_history(concatenated_command, arr[i]->data[0], arr[i]->data[1], arr[i]->data[2]);
+                }
+                free(concatenated_command);
+            }
+        }
+    }
+}
+//flag to signal the scheduler to start execution
+int executeFlag = 0;
+//signal handler 
+void scheduler_handler(int signo) {
+    if (signo == SIGUSR1) {
+        executeFlag = 1;
+    }
+}
+void shell_loop(struct Queue* ready_queue, int NCPU, int TSLICE) {
+    int status;
+    char* last_command = NULL;
+    do {
+        printf("$ ");
+        char* command = read_user_input();
+        if (command != NULL) {
+            if (last_command == NULL || strcmp(command, last_command) != 0) {
+                add_to_history(command, -1, 0, 0);
+                free(last_command);
+                last_command = strdup(command);
+            }
+            if (strcmp(command, "exit") == 0) {
+                for (int i = 0; i < history_count; i++) {
+                    printf("\n");
+                    printf("Command: %s\n", history[i].command);
+                    printf("Process ID: %d\n", history[i].pid);
+                    printf("Execution Time: %d seconds\n", history[i].execution_time);
+                    printf("Wait Time: %d seconds\n", history[i].wait_time);
+                    printf("Completion Time : %dseconds\n",(history[i].execution_time+history[i].wait_time));
+                    printf("\n");
+                }
+                free(command);
+                free(last_command);
+                break;
+            } else if (strcmp(command, "history") == 0) {
+                display_history();
+            } else if (strncmp(command, "submit", 6) == 0) {
+                char* executable_path = command + 7;
+                pid_t child = fork();
+                if (child == 0) {
+                    char* const argv[] = {executable_path, NULL};
+                    if (execvp(executable_path, argv) == -1) {
+                        perror("Execvp failed");
+                        exit(EXIT_FAILURE);
+                    }
+                } else if (child > 0) {
+                    if (kill(child, SIGSTOP) == 0) {
+                        enqueue(ready_queue, executable_path, child, 0, 0);
+                        // add_to_history(command, child, 0, 0);
+                    } else {
+                        perror("suspend failed\n");
+                    }
+                } else {
+                    perror("fork failed\n");
+                }
+            } else if (strncmp(command, "show", 4) == 0) {
+                show(ready_queue);
+            } else if (strncmp(command, "execute", 7) == 0) {
+                executescheduler(ready_queue, NCPU, TSLICE);
+            } else {
+                status = launch(command);
+                if (status != 0) {
+                    fprintf(stderr, "Process Execution failed: %s\n", command);
+                }
+            }
+        }
+        free(command);
+    } while (1);
+}
+int main(int argc, char* argv[]) {
+    if (argc != 3) {
+        fprintf(stderr, "Usage: %s NCPU TSLICE\n", argv[0]);
+        return 1;
+    }
+    int NCPU = atoi(argv[1]);
+    int TSLICE = atoi(argv[2]);
+    if (NCPU <= 0 || TSLICE <= 0) {
+        fprintf(stderr, "NCPU and TSLICE must be positive integers.\n");
+        return 1;
+    }
+    // Create the ready queue
+    struct Queue* ready_queue = createQueue();
+
+    // Register the signal handler for the scheduler
+    if (signal(SIGUSR1, scheduler_handler) == SIG_ERR) {
+        perror("Signal handler failed\n");
+        return 1;
+    }
+    pid_t scheduler_pid = fork();
+    if (scheduler_pid == 0) {
+        executescheduler(ready_queue,NCPU,TSLICE);
+    } else if (scheduler_pid > 0) {
+        shell_loop(ready_queue, NCPU, TSLICE);
+    } else {
+        perror("scheduler process failed\n");
+        return 1;
+    }
+    return 0;
+}
