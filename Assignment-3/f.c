@@ -423,8 +423,8 @@ void executescheduler(struct Queue* ready_queue, int NCPU, int TSILCE) {
             } else {
                 arr[i]->data[1] += TSILCE;
                 printf("Process with PID %d completed execution.\n", arr[i]->data[0]);
-                printf("Execution Time %d completed execution.\n", arr[i]->data[1]);
-                // printf("Process with Waiting Time %d completed execution.\n", array[i]->data[2]);
+                printf("Execution Time %d .\n", arr[i]->data[1]);
+                printf("Waiting Time %d.\n", array[i]->data[2]);
                 // printf("Process with Completion time %d completion time.\n", (array[i]->data[1]+array[i]->data[2]));
                 char *concatenated_command = (char *)malloc(strlen("submit ") + strlen(arr[i]->command) + 1);
                 if (concatenated_command == NULL) {
