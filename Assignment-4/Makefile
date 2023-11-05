@@ -6,4 +6,6 @@ all:
 	gcc -m32 -o lb simpleSmartLoaderBonus.c
 
 clean:
-	-@rm -f fib loader
+	-@rm -f fib l sum prime lb
+	
+
