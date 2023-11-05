@@ -167,6 +167,7 @@ void load_and_run_elf(char **exe)
 
 int main(int argc, char **argv)
 {
+    //   1. carry out necessary checks on the input ELF file
     if (argc != 2)
     {
         printf("Usage: %s <ELF Executable> \n", argv[0]);
@@ -178,28 +179,30 @@ int main(int argc, char **argv)
     //     printf("The file is not an ELF file or could not be loaded.\n");
     // }
     // else{
-    load_and_run_elf(argv);
-    //   1. carry out necessary checks on the input ELF file
     //   2. passing it to the loader for carrying out the loading/execution
+    load_and_run_elf(argv);
+
     struct sigaction sa;
     sa.sa_sigaction = segmentation_fault_handler;
     sigemptyset(&sa.sa_mask);
     sa.sa_flags = SA_SIGINFO;
     int *entry_address = (int *)(int)ehdr->e_entry;
     int (*_start)() = (int (*)())entry_address;
+
     if (sigaction(SIGSEGV, &sa, NULL) == -1)
     {
         perror("Error setting up signal handler!\n");
         exit(1);
     }
+
     int result = _start();
     printf("User _start return value = %d\n",result); 
     printf("total page allocated: %d\n", totalPageAllocated);
     printf("total no. of page faults: %d\n",pageFaults);
     printf("total internal fragmentation: %d\n",totalInternalFrag);
     printf("total internal fragmentation: %0.3f KB\n",(double)(totalInternalFrag/1024.0));
+    // 3. invoke the cleanup routine inside the loader
     loader_cleanup();
     // }
-    // 3. invoke the cleanup routine inside the loader
     return 0;
 }
