@@ -45,7 +45,7 @@ void parallel_for(int low, int SIZE, std::function<void(int)> &&lambda, int NTHR
     clock_t start_time = clock();
     const int Thres = 0;
 
-    if(SIZE>=Thres){
+    if(SIZE>=Thres ){
         pthread_t tid[NTHREADS];
         thread_args args[NTHREADS];
         int chunk = SIZE / NTHREADS;
@@ -58,11 +58,17 @@ void parallel_for(int low, int SIZE, std::function<void(int)> &&lambda, int NTHR
             args[i].high = (i + 1) * chunk;
             args[i].lambda = lambda;
             args[i].size = SIZE;
-            pthread_create(&tid[i], NULL, thread_func, (void *)&args[i]);
+            if(pthread_create(&tid[i], NULL, thread_func, (void *)&args[i])!=0){
+                fprintf(stderr, "Error creating thread %d.\n", i + 1);
+                exit(EXIT_FAILURE);
+            }
         }
 
         for (int i = 0; i < NTHREADS; i++) {
-            pthread_join(tid[i], NULL);
+            if(pthread_join(tid[i], NULL)!=0){
+                fprintf(stderr, "Error joining thread.\n");
+                exit(EXIT_FAILURE); 
+            }
             std::cout << "Thread " << i + 1 << " Execution Time: " << args[i].execution_time << " milliseconds\n";
         }
     }
@@ -125,14 +131,12 @@ void parallel_for(int low1, int SIZE1, int low2, int SIZE2, std::function<void(i
         if(SIZE1 % NTHREADS!=0){
                 chunk+=1;
         }
-
         for (int i = 0; i < NTHREADS; i++) {
             for (int j = 0; j < NTHREADS; j++) {
                 args1[i][j].low1 = i * chunk;
                 args1[i][j].high1 = (i + 1) * chunk;
                 args1[i][j].low2 = j * chunk;
                 args1[i][j].high2 = (j + 1) * chunk;
-
     // kya hua? upar wale tarike se, sare threads ko high low 0-2 or 2-4 milraha tha, okay, 
     // but 4th index kabhi update honeke liye kaha nahi gaya, so if last wale ko include karneke liye,
     // last wale ka high badhadiya to accomodate that extra index left out due to remainder
@@ -142,13 +146,20 @@ void parallel_for(int low1, int SIZE1, int low2, int SIZE2, std::function<void(i
                 // args1[i][j].high2 = (j == NTHREADS - 1) ? SIZE2 : (j + 1) * chunk;
                 args1[i][j].lambda = lambda;
                 args1[i][j].SIZE = SIZE1;
-                pthread_create(&tid1[i][j], NULL, thread_func1, (void *)&args1[i][j]);
+                if(pthread_create(&tid1[i][j], NULL, thread_func1, (void *)&args1[i][j])!=0){
+                    fprintf(stderr, "Error creating thread %d%d.\n", i + 1, j + 1);
+                    exit(EXIT_FAILURE);
+                }
+                
             }
         }
 
         for (int i = 0; i < NTHREADS; i++) {
             for (int j = 0; j < NTHREADS; j++) {
-                pthread_join(tid1[i][j], NULL);
+                if(pthread_join(tid1[i][j], NULL)!=0){
+                    fprintf(stderr, "Error joining thread.\n");
+                    exit(EXIT_FAILURE); 
+                }
                 std::cout << "Thread " << i + 1 << j + 1 << " Execution Time: " << args1[i][j].execution_time << " milliseconds\n";
             }
         }
@@ -175,7 +186,7 @@ int main(int argc, char **argv) {
     demonstration(lambda1);
     int rc = user_main(argc, argv);
     auto lambda2 = [y]() {
-        std::cout << y << "====== Hope you enjoyed CSE231(A) ======\n";
+        std::cout<< "====== Hope you enjoyed CSE231(A) ======\n";
     };
     demonstration(lambda2);
     return rc;
