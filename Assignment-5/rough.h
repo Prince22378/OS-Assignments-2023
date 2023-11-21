@@ -44,7 +44,7 @@ void *thread_func(void *ptr) {
 void parallel_for(int low, int SIZE, std::function<void(int)> &&lambda, int NTHREADS) {
     clock_t start_time = clock();
     const int Thres = 0;
-    if(NTHREADS<0){
+    if(NTHREADS<0){   //if floating value if passed it will automatically converted into integer. eg 1.5 = 1 so 1 thread will be created
       perror(" Negative Thread not possible");
       exit(1);
     }
