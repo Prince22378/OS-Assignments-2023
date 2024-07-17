@@ -1,4 +1,4 @@
-                                                    Operating System Assignments 
+                                              Operating System Assignments 
 
   * Guide: Dr. Vivek Kumar
 
